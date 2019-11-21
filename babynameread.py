@@ -60,29 +60,40 @@ filepath=filedialog.askopenfilename()
 tk.destroy()
 #import the file, with assigned column names.
 namedf=pandas.read_csv(filepath,header=None,names=['boyname','boyfreq','girlname','girlfreq'])
-#Rank the names from 1 to 1000 instead of from 0 to 999.
-namedf.index+=1
-
-#separate into boys' and girls' names
-boynames=namedf[['boyname','boyfreq']]
-girlnames=namedf[['girlname','girlfreq']]
+lendf=len(namedf)
 
 #add a column of reduced names
-boynames.loc[:,'reduced']='abc'
-for i in range(1,1001):
-    boynames.loc[i,'reduced']=reducename(boynames.loc[i,'boyname'])
-girlnames.loc[:,'reduced']='abc'
-for i in range(1,1001):
-    girlnames.loc[i,'reduced']=reducename(girlnames.loc[i,'girlname'])
+namedf['reducedboy']=['']*lendf
+namedf['reducedboy']=['']*lendf
+for i in range(lendf):
+    namedf.loc[i,'reducedboy']=reducename(namedf.loc[i,'boyname'])
+    namedf.loc[i,'reducedgirl']=reducename(namedf.loc[i,'girlname'])
+
+#separate into boys' and girls' names
+boynames=namedf[['boyname','boyfreq','reducedboy']]
+girlnames=namedf[['girlname','girlfreq','reducedgirl']]
 
 #Group by the reduced names
-bgroup=boynames.groupby('reduced')
+bgroup=boynames.groupby('reducedboy')
 #Aggregate each group by the total frequency of all its names
 bsummary=bgroup.agg(lambda g: ('/'.join(g.boyname),sum(g.boyfreq)))
 #rank the name groups by total frequency
 branked=bsummary.sort_values(by='boyfreq',ascending=False)
 
 #Group, aggregate and rank the girls' names.
-ggroup=girlnames.groupby('reduced')
+ggroup=girlnames.groupby('reducedgirl')
 gsummary=ggroup.agg(lambda g: ('/'.join(g.girlname),sum(g.girlfreq)))
 granked=gsummary.sort_values(by='girlfreq',ascending=False)
+
+#add ranking index
+branked.index=list(range(1,len(branked)+1))
+granked.index=list(range(1,len(granked)+1))
+
+#output
+print(branked.head(20))
+print('\n')
+print(granked.head(20))
+boycsv=input('What should the boy names csv be named? Include .csv in your input.')
+girlcsv=input('What should the girl names csv be named? Include .csv in your input.')
+branked.to_csv(boycsv)
+granked.to_csv(girlcsv)
